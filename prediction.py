@@ -1,15 +1,18 @@
+from importlib.resources import path
 from io import BytesIO
 
 import numpy as np
 import tensorflow as tf
 from PIL import Image
-
+from pathlib import Path
+from keras.models import load_model
 
 model = None
 
+class_names = ['blonde', 'brunette', 'gingers']
 
 def loadModel():
-    model = tf.keras.applications.MobileNetV2(weights="imagenet")
+    model = load_model('models/model.h5')
     print("Model loaded")
     return model
 
@@ -17,23 +20,22 @@ def loadModel():
 def predict(image: Image.Image):
     global model
     if model is None:
-        model = load_model()
+        model = loadModel()
+        
+    Img = np.asarray(image.resize((180, 180)))[..., :3]
+    img_array = tf.keras.utils.img_to_array(Img)
+    img_array = tf.expand_dims(img_array, 0)
+    new_model = load_model('models/model.h5')
+    predictions = new_model.predict(img_array)
+    score = tf.nn.softmax(predictions[0])
+    prediction = class_names[np.argmax(score)]
 
-    image = np.asarray(image.resize((224, 224)))[..., :3]
-    image = np.expand_dims(image, 0)
-    image = image / 127.5 - 1.0
-
-    result = model.predict(image)
-
-    response = []
-    for i, res in enumerate(result):
-        resp = {}
-        resp["class"] = res[1]
-        resp["confidence"] = f"{res[2]*100:0.2f} %"
-
-        response.append(resp)
-
-    return response
+    return prediction    
+    
+    
+    
+    
+    
 
 
 def read_imagefile(file) -> Image.Image:

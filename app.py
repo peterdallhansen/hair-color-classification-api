@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi import UploadFile, File
 import uvicorn
 
-from prediction import predict, preprocess, read_image
+from prediction import predict, read_imagefile
 
 
 app = FastAPI(title='Tensorflow FastAPI Starter Pack')
@@ -10,12 +10,12 @@ app = FastAPI(title='Tensorflow FastAPI Starter Pack')
 
 
 @app.post('/api/predict')
-async def predict_image(file: bytes = File(...)):
+async def predict_image(file: UploadFile = File(...)):
     
     #   Read file uploaded by user
-    image = read_image(file)
+    
     #   preprocess image
-    image = preprocess(image)
+    image = read_imagefile(await file.read())
     #   Make prediction
     score = predict(image)
     print(score)
