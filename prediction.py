@@ -1,38 +1,41 @@
 from io import BytesIO
-from tkinter import Image
+
 import numpy as np
-import PIL
 import tensorflow as tf
-
-import cv2
-
-import tensorflow as tf
-tf.get_logger().setLevel('INFO')
-from tensorflow.keras.models import load_model
-from keras.engine.training import Model
-import numpy as np
-
-img_height, img_width = 180, 180
-
-def read_image(image_encoded):
-    pil_image = Image.open(BytesIO(image_encoded))
-    return pil_image
-
-def preprocess(image: Image.Image):
-    img = tf.keras.utils.load_img(image , target_size=(img_height, img_width))
-    img_array = tf.keras.utils.img_to_array(img)
-    img_array = tf.expand_dims(img_array, 0)
-    return img_array
-
-def load_model():
-    new_model = load_model('models/model.h5')
-    return new_model
-    
-_model_ = load_model()
-
-def predict(image: np.array):
-    predictions = _model_.predict(image)
-    score = tf.nn.softmax(predictions[0])
-    return score
+from PIL import Image
 
 
+model = None
+
+
+def loadModel():
+    model = tf.keras.applications.MobileNetV2(weights="imagenet")
+    print("Model loaded")
+    return model
+
+
+def predict(image: Image.Image):
+    global model
+    if model is None:
+        model = load_model()
+
+    image = np.asarray(image.resize((224, 224)))[..., :3]
+    image = np.expand_dims(image, 0)
+    image = image / 127.5 - 1.0
+
+    result = model.predict(image)
+
+    response = []
+    for i, res in enumerate(result):
+        resp = {}
+        resp["class"] = res[1]
+        resp["confidence"] = f"{res[2]*100:0.2f} %"
+
+        response.append(resp)
+
+    return response
+
+
+def read_imagefile(file) -> Image.Image:
+    image = Image.open(BytesIO(file))
+    return image
